@@ -1,2 +1,2 @@
-# activity_recognition
+# Activity Recognition
 Performance Metrics for Activity Recognition
