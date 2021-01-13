@@ -1,16 +1,24 @@
 import json
+import os
+
+from utils import constants
 
 
-def import_json(file_path):
-    try:
-        with open(
-                file_path, encoding="utf8") as f:
-            json_string = f.read()
-        json_object = json.loads(json_string)
-        return json_object
+def import_json(dir_path):
+    json_object = []
+    for entry in os.listdir(dir_path):
+        file_path = os.path.join(dir_path, entry)
+        if os.path.isfile(file_path):
+            try:
+                with open(
+                        file_path, encoding="utf8") as f:
+                    json_string = f.read()
+                json_object.append(json.loads(json_string))
 
-    except Exception as e:
-        print(repr(e))
+            except Exception as e:
+                print(repr(e))
+
+    return json_object
 
 
 def beatify_json(json_object, file_path, file_name):
@@ -22,12 +30,13 @@ def beatify_json(json_object, file_path, file_name):
         print(repr(e))
 
 
-def extract_features(json_object, features):
+def extract_features(json_object):
     data_set = []
-    for activity in json_object[0]['summarizedActivitiesExport']:
-        dist = {}
-        for feature in features:
-            if feature in activity:
-                dist[feature] = activity[feature]
-        data_set.append(dist)
+    for obj in json_object:
+        for activity in obj[0]['summarizedActivitiesExport']:
+            dist = {}
+            for feature in constants.RAW_FEATURES:
+                if feature in activity:
+                    dist[feature] = activity[feature]
+            data_set.append(dist)
     return data_set
