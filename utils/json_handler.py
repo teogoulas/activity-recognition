@@ -1,13 +1,15 @@
 import json
 import os
 
+import pandas as pd
+from models.activity import Activity
 from utils import constants
 
 
-def import_json(dir_path):
+def import_json():
     json_object = []
-    for entry in os.listdir(dir_path):
-        file_path = os.path.join(dir_path, entry)
+    for entry in os.listdir(constants.RAW_DATA_DIR):
+        file_path = os.path.join(constants.RAW_DATA_DIR, entry)
         if os.path.isfile(file_path):
             try:
                 with open(
@@ -30,13 +32,32 @@ def beatify_json(json_object, file_path, file_name):
         print(repr(e))
 
 
+def extract_attribute(activity, key):
+    return activity[key] if key in activity.keys() else None
+
+
 def extract_features(json_object):
     data_set = []
     for obj in json_object:
         for activity in obj[0]['summarizedActivitiesExport']:
-            dist = {}
-            for feature in constants.RAW_FEATURES:
-                if feature in activity:
-                    dist[feature] = activity[feature]
-            data_set.append(dist)
-    return data_set
+            activity_type = extract_attribute(activity, 'activityType')
+            if activity_type in constants.FILTERED_FEATURES:
+                if activity_type == "cycling" or activity_type == "mountain_biking":
+                    activity_type = "biking"
+                elif activity_type == "trail_running":
+                    activity_type = "running"
+                elif activity_type == "other":
+                    activity_type = "indoor_cardio"
+                new_activity = Activity(activity_type=activity_type,
+                                        aerobic_training_effect=extract_attribute(activity, 'aerobicTrainingEffect'),
+                                        anaerobic_training_effect=extract_attribute(activity, 'anaerobicTrainingEffect'),
+                                        avg_hr=extract_attribute(activity, 'avgHr'),
+                                        avg_speed=extract_attribute(activity, 'avgSpeed'),
+                                        calories=extract_attribute(activity, 'calories'),
+                                        distance=extract_attribute(activity, 'distance'),
+                                        # max_double_cadence=extract_attribute(activity, 'maxDoubleCadence'),
+                                        max_ftp=extract_attribute(activity, 'maxFtp'),
+                                        max_hr=extract_attribute(activity, 'maxHr'),
+                                        duration=extract_attribute(activity, 'duration'))
+                data_set.append(new_activity)
+    return pd.DataFrame([act.as_dict() for act in data_set])
