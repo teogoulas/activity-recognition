@@ -2,6 +2,8 @@ import json
 import os
 
 import pandas as pd
+from sklearn import preprocessing
+
 from models.activity import Activity
 from utils import constants
 
@@ -36,6 +38,36 @@ def extract_attribute(activity, key):
     return activity[key] if key in activity.keys() else None
 
 
+def data_preprocessing(data_set):
+    # remove NaN values and convert to np array
+    filtered_data = data_set.dropna()
+    y = filtered_data['activity_type'].to_numpy()
+    original = filtered_data.iloc[:, 1:11].to_numpy()
+
+    # Minmax scaler
+    mm_scaler = preprocessing.MinMaxScaler()
+    minmax_scaler = mm_scaler.fit_transform(original)
+
+    # Robust scaler
+    rs = preprocessing.RobustScaler()
+    robust_scaler = rs.fit_transform(original)
+    hybrid_scaler = rs.fit_transform(minmax_scaler)
+
+    # Standard scaler
+    ss = preprocessing.StandardScaler()
+    standard_scaler = ss.fit_transform(original)
+    hybrid_scaler = ss.fit_transform(hybrid_scaler)
+
+    # Normalizer
+    normalizer = preprocessing.Normalizer()
+    x_normed = normalizer.fit_transform(original)
+    hybrid_scaler = normalizer.fit_transform(hybrid_scaler)
+
+    return {"original": original, "minmax_scaler": minmax_scaler, "robust_scaler": robust_scaler,
+            "normalizer": x_normed,
+            "standard_scaler": standard_scaler, "hybrid_scaler": hybrid_scaler, "y": y}
+
+
 def extract_features(json_object):
     data_set = []
     for obj in json_object:
@@ -50,7 +82,8 @@ def extract_features(json_object):
                     activity_type = "indoor_cardio"
                 new_activity = Activity(activity_type=activity_type,
                                         aerobic_training_effect=extract_attribute(activity, 'aerobicTrainingEffect'),
-                                        anaerobic_training_effect=extract_attribute(activity, 'anaerobicTrainingEffect'),
+                                        anaerobic_training_effect=extract_attribute(activity,
+                                                                                    'anaerobicTrainingEffect'),
                                         avg_hr=extract_attribute(activity, 'avgHr'),
                                         avg_speed=extract_attribute(activity, 'avgSpeed'),
                                         calories=extract_attribute(activity, 'calories'),
@@ -60,4 +93,4 @@ def extract_features(json_object):
                                         max_hr=extract_attribute(activity, 'maxHr'),
                                         duration=extract_attribute(activity, 'duration'))
                 data_set.append(new_activity)
-    return pd.DataFrame([act.as_dict() for act in data_set])
+    return data_preprocessing(pd.DataFrame([act.as_dict() for act in data_set]))
