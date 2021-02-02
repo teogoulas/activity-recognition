@@ -29,7 +29,7 @@ def logistic_regression(data_set):
             'xaxis_tickangle': -45,
             'title': {
                 'text': f"{key} Metric per Logistic regression solver",
-                'y': 0.85,
+                'y': 0.9,
                 'x': 0.5,
                 'xanchor': 'center',
                 'yanchor': 'top'

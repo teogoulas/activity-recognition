@@ -9,3 +9,4 @@ if __name__ == '__main__':
     lr = logistic_regression(data_set)
     print(f"Optimal logistic regression classifier solver: {lr['optimal_clf'].best_params_['solver']}")
     print(f"with optimal data preprocessing policy: {lr['optimal_preprocess_policy']}")
+    print(f"Accuracy score: {lr['optimal_clf'].best_score_}")
