@@ -1,10 +1,11 @@
 from copy import deepcopy
-
+import numpy as np
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, cross_val_score, cross_validate
 import plotly.graph_objects as go
 import warnings
 
+from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 
 warnings.filterwarnings('ignore')
@@ -136,7 +137,7 @@ def knn_classifier(data_set):
 
                 fig = figures[param]
                 fig.add_trace(go.Bar(
-                    x=list(map(str,grid_params['n_neighbors'])),
+                    x=list(map(str, grid_params[param])),
                     y=list(param_score.values()),
                     name=key,
                     marker_color=colors[color_index]
@@ -152,4 +153,64 @@ def knn_classifier(data_set):
         optimal_params += f"{key}: {value}, "
     optimal_params = optimal_params[:-2]
 
-    return {'optimal_clf': optimal_clf, 'optimal_preprocess_policy': optimal_preprocess_policy, 'optimal_params': optimal_params}
+    return {'optimal_clf': optimal_clf, 'optimal_preprocess_policy': optimal_preprocess_policy,
+            'optimal_params': optimal_params}
+
+
+def naive_bayes(data_set):
+    colors = ['indianred', 'lightsalmon', 'crimson', 'blue', 'green', 'purple']
+
+    # evaluation metrics
+    scoring = {'AUC': 'roc_auc_ovo_weighted', 'Accuracy': 'accuracy', 'Precision': 'precision_weighted',
+               'Recall': 'recall_weighted', 'F1-score': 'f1_weighted'}
+
+    # initialize one figure per Metric
+
+    fig = go.Figure(layout={
+        'barmode': 'group',
+        'xaxis_tickangle': -45,
+        'title': {
+            'text': f"Naive Bayes Model evaluation Metric",
+            'y': 0.9,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'
+        },
+        'xaxis_title': "Metrics",
+        'yaxis_title': f"Score",
+        'legend_title': "Data preprocess algorithm"
+    })
+
+    color_index = 0
+    optimal_clf = None
+    optimal_preprocess_policy = 'original'
+    for key in data_set.keys():
+        if key == "y":
+            continue
+        else:
+            scores = {}
+            for score_fn in scoring.keys():
+                cv = cross_validate(GaussianNB(), data_set[key], data_set["y"],
+                                    scoring=scoring[score_fn], cv=10)
+                scores[score_fn] = np.mean(cv['test_score'])
+
+                if score_fn == 'Accuracy' and (optimal_clf is None or optimal_clf['best_score_'] < scores[score_fn]):
+                    optimal_clf = {
+                        'best_score_': scores[score_fn],
+                        'preprocess_policy': key,
+                        'fit_time_': np.mean(cv['fit_time'])
+                    }
+                    optimal_preprocess_policy = key
+
+            fig.add_trace(go.Bar(
+                x=list(scoring.keys()),
+                y=list(scores.values()),
+                name=key,
+                marker_color=colors[color_index]
+            ))
+
+            color_index += 1
+
+    fig.show()
+
+    return {'optimal_clf': optimal_clf, 'optimal_preprocess_policy': optimal_preprocess_policy}

@@ -187,5 +187,6 @@ def extract_features(json_object):
                                         avg_respiration_rate=extract_attribute(activity, 'avgRespirationRate'),
                                         activity_training_load=extract_attribute(activity, 'activityTrainingLoad'))
                 data_set.append(new_activity)
-
-    return data_preprocessing(pd.DataFrame([act.as_dict() for act in data_set]))
+    df = pd.DataFrame([act.as_dict() for act in data_set])
+    df.to_csv(r'meta_data/raw_data.csv', index=False, header=True)
+    return df
