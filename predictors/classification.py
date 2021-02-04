@@ -1,6 +1,6 @@
 import sys
 import pandas as pd
-from predictors.predictors import logistic_regression, knn_classifier, naive_bayes
+from predictors.predictors import logistic_regression, knn_classifier, naive_bayes, decision_tree
 from utils import data_handler as json
 from utils.data_handler import data_preprocessing
 
@@ -33,3 +33,8 @@ def classification(args):
     nbc = naive_bayes(data_set)
     print(f"Optimal Naive Bayes accuracy score: {nbc['optimal_clf']['best_score_']}")
     print(f"with optimal data preprocessing policy: {nbc['optimal_preprocess_policy']}")
+
+    dt = decision_tree(data_set)
+    print(f"Optimal Decision tree classifier params: {dt['optimal_params']}")
+    print(f"with optimal data preprocessing policy: {dt['optimal_preprocess_policy']}")
+    print(f"Accuracy score: {dt['optimal_clf'].best_score_}")
