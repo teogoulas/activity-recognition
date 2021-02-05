@@ -1,6 +1,6 @@
 from copy import deepcopy
 import numpy as np
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, Perceptron
 from sklearn.model_selection import GridSearchCV, cross_val_score, cross_validate
 import plotly.graph_objects as go
 import warnings
@@ -235,7 +235,15 @@ def decision_tree(data_set):
 def svm_classifier(data_set):
     grid_params = {
         'C': [0.1, 1, 10, 100],
-        'gamma': [1, 0.01, 0.001, 0.0001],
+        'gamma': [1, 0.1, 0.01, 0.001],
         'kernel': ['rbf', 'poly', 'sigmoid']
     }
-    return classifier_wrapper(SVC(random_state=45), grid_params, 5, data_set)
+    return classifier_wrapper(SVC(random_state=45), grid_params, 10, data_set)
+
+
+def perceptron(data_set):
+    grid_params = {
+        'eta0': [0.0001, 0.001, 0.01, 0.1, 1.0],
+        'max_iter': [100, 1000, 10000]
+    }
+    return classifier_wrapper(Perceptron(random_state=45), grid_params, 10, data_set)

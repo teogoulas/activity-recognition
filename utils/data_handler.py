@@ -51,6 +51,7 @@ def data_preprocessing(data_set):
     # remove NaN values and convert to np array
     filtered_data = data_set.dropna()
     print(f"Dataset size: {len(filtered_data)} samples")
+    print()
 
     y = filtered_data['activity_type'].to_numpy()
     original = filtered_data.iloc[:, 1:11].to_numpy()
