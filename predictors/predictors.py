@@ -14,6 +14,79 @@ warnings.filterwarnings('ignore')
 warnings.simplefilter('ignore')
 
 
+def classifier_wrapper(clf, grid_params, cv, data_set):
+    colors = ['indianred', 'lightsalmon', 'crimson', 'blue', 'green', 'purple', 'goldenrod', 'magenta']
+    gs = GridSearchCV(
+        clf,
+        grid_params,
+        verbose=0,
+        cv=cv,
+        n_jobs=-1,
+        return_train_score=True
+    )
+
+    # initialize one figure per parameter
+    accuracy_figures = {}
+    for key in grid_params.keys():
+        acc_fig = go.Figure(layout={
+            'barmode': 'group',
+            'xaxis_tickangle': -45,
+            'title': {
+                'text': f"Accuracy per {key}",
+                'y': 0.9,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top'
+            },
+            'xaxis_title': key,
+            'yaxis_title': "Accuracy Score",
+            'legend_title': "Data preprocess algorithm"
+        })
+        accuracy_figures[key] = acc_fig
+
+    optimal_clf = None
+    optimal_preprocess_policy = 'original'
+
+    color_index = 0
+    for key in data_set.keys():
+        if key == "y":
+            continue
+        else:
+            gs.fit(data_set[key], data_set["y"])
+
+            # find optimal classifier and data scaling algorithm
+            if optimal_clf is None or optimal_clf.best_score_ < gs.best_score_:
+                optimal_clf = deepcopy(gs)
+                optimal_preprocess_policy = key
+
+            for param in grid_params.keys():
+                param_test_score = {}
+                for value in grid_params[param]:
+                    indices = [i for i, x in enumerate(gs.cv_results_[f"param_{param}"]) if x == value]
+                    param_test_score[value] = max([gs.cv_results_['mean_test_score'][i] for i in indices])
+
+                acc_fig = accuracy_figures[param]
+                acc_fig.add_trace(go.Bar(
+                    x=list(map(str, grid_params[param])),
+                    y=list(param_test_score.values()),
+                    name=key,
+                    marker_color=colors[color_index]
+                ))
+
+        color_index += 1
+
+    for key in accuracy_figures.keys():
+        accuracy_figures[key].show()
+
+    optimal_params = ''
+    for key, value in optimal_clf.best_params_.items():
+        optimal_params += f"{key}: {value}, "
+    optimal_params = optimal_params[:-2]
+
+    return {'optimal_clf': optimal_clf, 'optimal_preprocess_policy': optimal_preprocess_policy,
+            'optimal_params': optimal_params}
+
+
 def logistic_regression(data_set):
     # logistic regression solvers list
     solver_list = ['liblinear', 'newton-cg', 'lbfgs', 'sag', 'saga']
@@ -83,81 +156,12 @@ def logistic_regression(data_set):
 
 
 def knn_classifier(data_set):
-    colors = ['indianred', 'lightsalmon', 'crimson', 'blue', 'green', 'purple']
     grid_params = {
-        'n_neighbors': [3, 5, 11, 19],
+        'n_neighbors': [1, 3, 5, 11, 19],
         'weights': ['uniform', 'distance'],
         'metric': ['euclidean', 'manhattan']
     }
-    gs = GridSearchCV(
-        KNeighborsClassifier(),
-        grid_params,
-        verbose=0,
-        cv=10,
-        n_jobs=-1,
-        return_train_score=True
-    )
-
-    # initialize one figure per parameter
-    figures = {}
-    for key in grid_params.keys():
-        fig = go.Figure(layout={
-            'barmode': 'group',
-            'xaxis_tickangle': -45,
-            'title': {
-                'text': f"Accuracy per {key}",
-                'y': 0.9,
-                'x': 0.5,
-                'xanchor': 'center',
-                'yanchor': 'top'
-            },
-            'xaxis_title': key,
-            'yaxis_title': "Accuracy Score",
-            'legend_title': "Data preprocess algorithm"
-        })
-        figures[key] = fig
-
-    optimal_clf = None
-    optimal_preprocess_policy = 'original'
-
-    color_index = 0
-    for key in data_set.keys():
-        if key == "y":
-            continue
-        else:
-            gs.fit(data_set[key], data_set["y"])
-
-            # find optimal classifier and data scaling algorithm
-            if optimal_clf is None or optimal_clf.best_score_ < gs.best_score_:
-                optimal_clf = deepcopy(gs)
-                optimal_preprocess_policy = key
-
-            for param in grid_params.keys():
-                param_score = {}
-                for value in grid_params[param]:
-                    indices = [i for i, x in enumerate(gs.cv_results_[f"param_{param}"]) if x == value]
-                    param_score[value] = max([gs.cv_results_['mean_test_score'][i] for i in indices])
-
-                fig = figures[param]
-                fig.add_trace(go.Bar(
-                    x=list(map(str, grid_params[param])),
-                    y=list(param_score.values()),
-                    name=key,
-                    marker_color=colors[color_index]
-                ))
-
-        color_index += 1
-
-    for key in figures.keys():
-        figures[key].show()
-
-    optimal_params = ''
-    for key, value in optimal_clf.best_params_.items():
-        optimal_params += f"{key}: {value}, "
-    optimal_params = optimal_params[:-2]
-
-    return {'optimal_clf': optimal_clf, 'optimal_preprocess_policy': optimal_preprocess_policy,
-            'optimal_params': optimal_params}
+    return classifier_wrapper(KNeighborsClassifier(), grid_params, 10, data_set)
 
 
 def naive_bayes(data_set):
@@ -220,156 +224,18 @@ def naive_bayes(data_set):
 
 
 def decision_tree(data_set):
-    colors = ['indianred', 'lightsalmon', 'crimson', 'blue', 'green', 'purple']
     grid_params = {
         'criterion': ['gini', 'entropy'],
         'splitter': ['best', 'random'],
         'max_depth': [None, 1, 5, 10, 15, 20, 25]
     }
-    gs = GridSearchCV(
-        DecisionTreeClassifier(random_state=45),
-        grid_params,
-        verbose=0,
-        cv=10,
-        n_jobs=-1,
-        return_train_score=True
-    )
-
-    # initialize one figure per parameter
-    figures = {}
-    for key in grid_params.keys():
-        fig = go.Figure(layout={
-            'barmode': 'group',
-            'xaxis_tickangle': -45,
-            'title': {
-                'text': f"Accuracy per {key}",
-                'y': 0.9,
-                'x': 0.5,
-                'xanchor': 'center',
-                'yanchor': 'top'
-            },
-            'xaxis_title': key,
-            'yaxis_title': "Accuracy Score",
-            'legend_title': "Data preprocess algorithm"
-        })
-        figures[key] = fig
-
-    optimal_clf = None
-    optimal_preprocess_policy = 'original'
-
-    color_index = 0
-    for key in data_set.keys():
-        if key == "y":
-            continue
-        else:
-            gs.fit(data_set[key], data_set["y"])
-
-            # find optimal classifier and data scaling algorithm
-            if optimal_clf is None or optimal_clf.best_score_ < gs.best_score_:
-                optimal_clf = deepcopy(gs)
-                optimal_preprocess_policy = key
-
-            for param in grid_params.keys():
-                param_score = {}
-                for value in grid_params[param]:
-                    indices = [i for i, x in enumerate(gs.cv_results_[f"param_{param}"]) if x == value]
-                    param_score[value] = max([gs.cv_results_['mean_test_score'][i] for i in indices])
-
-                fig = figures[param]
-                fig.add_trace(go.Bar(
-                    x=list(map(str, grid_params[param])),
-                    y=list(param_score.values()),
-                    name=key,
-                    marker_color=colors[color_index]
-                ))
-
-        color_index += 1
-
-    for key in figures.keys():
-        figures[key].show()
-
-    optimal_params = ''
-    for key, value in optimal_clf.best_params_.items():
-        optimal_params += f"{key}: {value}, "
-    optimal_params = optimal_params[:-2]
-
-    return {'optimal_clf': optimal_clf, 'optimal_preprocess_policy': optimal_preprocess_policy,
-            'optimal_params': optimal_params}
+    return classifier_wrapper(DecisionTreeClassifier(random_state=45), grid_params, 10, data_set)
 
 
 def svm_classifier(data_set):
-    colors = ['indianred', 'lightsalmon', 'crimson', 'blue', 'green', 'purple']
     grid_params = {
-        'C': [0.1, 1, 10],
-        'gamma': [1, 0.01, 0.001],
-        'kernel': ['linear', 'rbf', 'poly', 'sigmoid']
+        'C': [0.1, 1, 10, 100],
+        'gamma': [1, 0.01, 0.001, 0.0001],
+        'kernel': ['rbf', 'poly', 'sigmoid']
     }
-    gs = GridSearchCV(
-        SVC(random_state=45),
-        grid_params,
-        verbose=0,
-        cv=5,
-        n_jobs=-1,
-        return_train_score=True
-    )
-
-    # initialize one figure per parameter
-    figures = {}
-    for key in grid_params.keys():
-        fig = go.Figure(layout={
-            'barmode': 'group',
-            'xaxis_tickangle': -45,
-            'title': {
-                'text': f"Accuracy per {key}",
-                'y': 0.9,
-                'x': 0.5,
-                'xanchor': 'center',
-                'yanchor': 'top'
-            },
-            'xaxis_title': key,
-            'yaxis_title': "Accuracy Score",
-            'legend_title': "Data preprocess algorithm"
-        })
-        figures[key] = fig
-
-    optimal_clf = None
-    optimal_preprocess_policy = 'original'
-
-    color_index = 0
-    for key in data_set.keys():
-        if key == "y":
-            continue
-        else:
-            gs.fit(data_set[key], data_set["y"])
-
-            # find optimal classifier and data scaling algorithm
-            if optimal_clf is None or optimal_clf.best_score_ < gs.best_score_:
-                optimal_clf = deepcopy(gs)
-                optimal_preprocess_policy = key
-
-            for param in grid_params.keys():
-                param_score = {}
-                for value in grid_params[param]:
-                    indices = [i for i, x in enumerate(gs.cv_results_[f"param_{param}"]) if x == value]
-                    param_score[value] = max([gs.cv_results_['mean_test_score'][i] for i in indices])
-
-                fig = figures[param]
-                fig.add_trace(go.Bar(
-                    x=list(map(str, grid_params[param])),
-                    y=list(param_score.values()),
-                    name=key,
-                    marker_color=colors[color_index]
-                ))
-
-        color_index += 1
-
-    for key in figures.keys():
-        figures[key].show()
-
-    optimal_params = ''
-    for key, value in optimal_clf.best_params_.items():
-        optimal_params += f"{key}: {value}, "
-    optimal_params = optimal_params[:-2]
-
-    return {'optimal_clf': optimal_clf, 'optimal_preprocess_policy': optimal_preprocess_policy,
-            'optimal_params': optimal_params}
+    return classifier_wrapper(SVC(random_state=45), grid_params, 5, data_set)
