@@ -231,6 +231,7 @@ def comparing_classifiers(clfs, data_set):
         optimal_clf = clfs[clf]['optimal_clf']
         optimal_preprocess_policy = clfs[clf]['optimal_preprocess_policy']
         scores = {}
+        roc = calculate_roc_auc(data_set, optimal_clf, optimal_preprocess_policy, clf, 10)
         if clf == 'naive_bayes':
             fit_time['naive_bayes'] = optimal_clf.fit_time_
             scores = optimal_clf.best_score_
@@ -240,7 +241,7 @@ def comparing_classifiers(clfs, data_set):
                 if metric == 'Accuracy':
                     scores[metric] = optimal_clf.best_score_
                 elif metric == 'AUC':
-                    scores[metric] = calculate_roc_auc(data_set, optimal_clf, optimal_preprocess_policy, clf, 10)['auc_score']
+                    scores[metric] = roc['auc_score']
                 else:
                     cv = cross_validate(optimal_clf.best_estimator_, data_set[optimal_preprocess_policy], data_set["y"],
                                         scoring=metrics[metric], cv=10)
@@ -253,7 +254,7 @@ def comparing_classifiers(clfs, data_set):
             marker_color=colors[color_index]
         ))
 
-        plot_roc_curve(optimal_clf, clf, data_set, optimal_preprocess_policy)
+        plot_roc_curve(clf, roc)
 
         color_index += 1
 

@@ -72,11 +72,10 @@ def calculate_roc_auc(data_set, optimal_clf, optimal_preprocess_policy, clf_name
     return {'auc_score': auc(mean_fpr, mean_tpr), 'fpr': mean_fpr, 'tpr': mean_tpr}
 
 
-def plot_roc_curve(clf, clf_name, data_set, optimal_preprocess_policy):
+def plot_roc_curve(clf_name, roc):
     lw = 2
 
     # Compute micro-average ROC curve and ROC area
-    roc = calculate_roc_auc(data_set, clf, optimal_preprocess_policy, clf_name, 10)
     fpr = roc['fpr']
     tpr = roc['tpr']
     roc_auc = roc['auc_score']
