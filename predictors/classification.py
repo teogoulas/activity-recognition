@@ -1,5 +1,7 @@
 import sys
+
 import pandas as pd
+
 from predictors.predictors import logistic_regression, knn_classifier, naive_bayes, decision_tree, svm_classifier, \
     perceptron, comparing_classifiers
 from utils import data_handler as json
@@ -22,7 +24,7 @@ def classification(args):
     data_set = data_preprocessing(raw_data_set)
 
     lr = logistic_regression(data_set)
-    print(f"Optimal logistic regression classifier solver: {lr['optimal_clf'].best_params_['solver']}")
+    print(f"Optimal logistic regression classifier solver: {lr['optimal_params']}")
     print(f"with optimal data preprocessing policy: {lr['optimal_preprocess_policy']}")
     print(f"Accuracy score: {lr['optimal_clf'].best_score_}")
     print()
