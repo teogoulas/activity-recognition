@@ -1,9 +1,9 @@
-from sklearn.metrics import roc_curve, auc
-from sklearn.model_selection import StratifiedKFold, train_test_split
 import numpy as np
+import plotly.graph_objects as go
+from sklearn.metrics import roc_curve, auc
+from sklearn.model_selection import StratifiedKFold
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import label_binarize
-import plotly.graph_objects as go
 
 from utils import constants
 
@@ -72,7 +72,7 @@ def calculate_roc_auc(data_set, optimal_clf, optimal_preprocess_policy, clf_name
     return {'auc_score': auc(mean_fpr, mean_tpr), 'fpr': mean_fpr, 'tpr': mean_tpr}
 
 
-def plot_roc_curve(clf_name, roc):
+def plot_roc_curve(clf_name, roc, color):
     lw = 2
 
     # Compute micro-average ROC curve and ROC area
@@ -81,18 +81,8 @@ def plot_roc_curve(clf_name, roc):
     roc_auc = roc['auc_score']
 
     # Plot ROC curve
-    data = [go.Scatter(x=fpr, y=tpr,
-                       mode='lines',
-                       line=dict(color='deeppink', width=lw),
-                       name='ROC curve (area = {0:0.2f})'
-                            ''.format(roc_auc)),
-            go.Scatter(x=[0, 1], y=[0, 1],
-                       mode='lines',
-                       name='Chance',
-                       line=dict(color='black', width=lw, dash='dash'))]
-
-    layout = go.Layout(title=f"ROC curve for optimal {clf_name} classifier",
-                       xaxis=dict(title='False Positive Rate'),
-                       yaxis=dict(title='True Positive Rate'))
-
-    go.Figure(data=data, layout=layout).show()
+    return go.Scatter(x=fpr, y=tpr,
+                      mode='lines',
+                      line=dict(color=color, width=lw),
+                      name='{0} ROC curve (area = {1:0.3f})'
+                           ''.format(clf_name, roc_auc))

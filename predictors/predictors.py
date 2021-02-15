@@ -1,10 +1,10 @@
+import warnings
 from copy import deepcopy
 
 import numpy as np
-from sklearn.linear_model import LogisticRegression, Perceptron
-from sklearn.model_selection import GridSearchCV, cross_validate, StratifiedKFold, train_test_split
 import plotly.graph_objects as go
-import warnings
+from sklearn.linear_model import LogisticRegression, Perceptron
+from sklearn.model_selection import GridSearchCV, cross_validate
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
@@ -225,6 +225,24 @@ def comparing_classifiers(clfs, data_set):
         'yaxis_title': f"Fit time",
     })
 
+    roc_fig = go.Figure(layout={
+        'barmode': 'group',
+        'xaxis_tickangle': -45,
+        'title': {
+            'text': f"ROC curves for optimal classifiers",
+            'y': 0.9,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top'
+        },
+        'xaxis_title': "False Positive Rate",
+        'yaxis_title': f"True Positive Rate",
+    })
+    roc_fig.add_trace(go.Scatter(x=[0, 1], y=[0, 1],
+                                 mode='lines',
+                                 name='Chance',
+                                 line=dict(color='black', width=2, dash='dash')))
+
     color_index = 0
     fit_time = {}
     for clf in clfs:
@@ -254,7 +272,7 @@ def comparing_classifiers(clfs, data_set):
             marker_color=colors[color_index]
         ))
 
-        plot_roc_curve(clf, roc)
+        roc_fig.add_trace(plot_roc_curve(clf, roc, colors[color_index]))
 
         color_index += 1
 
@@ -263,6 +281,6 @@ def comparing_classifiers(clfs, data_set):
         y=list(fit_time.values()),
     ))
 
+    roc_fig.show()
     acc_fig.show()
     time_fig.show()
-
